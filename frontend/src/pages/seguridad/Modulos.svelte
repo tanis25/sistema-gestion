@@ -7,6 +7,7 @@
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
   import { notifySuccess, notifyError } from '../../lib/stores/toast.js';
   import { navegar } from '../../lib/navegador.js';
+  import { cargarMenus } from '../../lib/stores/menus.js';
 
   let modulos = $state([]);
   let total = $state(0);
@@ -90,13 +91,16 @@
   function abrirEliminar(modulo) { moduloSeleccionado = modulo; modalEliminar = true; }
 
   async function recargarMenus() {
-    const tkn = localStorage.getItem('token');
+    const tkn = tokenVal || localStorage.getItem('token');
     if (tkn) await cargarMenus(tkn);
   }
 
-  async function guardar() {
+  async function guardar(event) {
+    event?.preventDefault();
     formError = '';
-    if (!form.strNombreModulo.trim()) { formError = 'El nombre es requerido.'; return; }
+    const nombre = form.strNombreModulo.trim();
+    if (!nombre) { formError = 'El nombre es requerido.'; return; }
+    if (nombre.length < 3) { formError = 'El nombre debe tener al menos 3 caracteres.'; return; }
     try {
       const url = modoEditar
         ? `/api/modulos/${moduloSeleccionado.id}`
@@ -219,36 +223,39 @@
 {#if modalAbierto && (perms.agregar || perms.editar)}
   <div class="modal-overlay">
     <div class="modal">
-      <div class="modal-header">
-        <h3>{modoEditar ? '✏️ Editar Módulo' : '➕ Nuevo Módulo'}</h3>
-        <button class="btn-cerrar" onclick={() => modalAbierto = false} aria-label="Cerrar">✕</button>
-      </div>
-      {#if formError}<div class="alerta alerta-error">⚠️ {formError}</div>{/if}
+      <form onsubmit={guardar}>
+        <div class="modal-header">
+          <h3>{modoEditar ? '✏️ Editar Módulo' : '➕ Nuevo Módulo'}</h3>
+          <button class="btn-cerrar" type="button" onclick={() => modalAbierto = false} aria-label="Cerrar">✕</button>
+        </div>
+        {#if formError}<div class="alerta alerta-error">⚠️ {formError}</div>{/if}
 
-      <div class="form-group">
-        <label for="nombre">Nombre del Módulo *</label>
-        <input
-          id="nombre" type="text" class="form-control"
-          placeholder="Nombre del módulo"
-          bind:value={form.strNombreModulo} maxlength="100"
-        />
-      </div>
+        <div class="form-group">
+          <label for="nombre">Nombre del Módulo *</label>
+          <input
+            id="nombre" type="text" class="form-control"
+            placeholder="Nombre del módulo"
+            bind:value={form.strNombreModulo} maxlength="100"
+            required minlength="3"
+          />
+        </div>
 
-      <div class="form-group">
-        <label for="menu">Asignar al Menú</label>
-        <select id="menu" class="form-control" bind:value={form.idMenu}>
-          <option value="">-- Sin menú asignado --</option>
-          <option value="1">🔐 Seguridad</option>
-          <option value="2">📋 Principal 1</option>
-          <option value="3">📊 Principal 2</option>
-        </select>
-        <p class="campo-hint">Selecciona el menú donde aparecerá este módulo en la barra de navegación.</p>
-      </div>
+        <div class="form-group">
+          <label for="menu">Asignar al Menú</label>
+          <select id="menu" class="form-control" bind:value={form.idMenu}>
+            <option value="">-- Sin menú asignado --</option>
+            <option value="1">🔐 Seguridad</option>
+            <option value="2">📋 Principal 1</option>
+            <option value="3">📊 Principal 2</option>
+          </select>
+          <p class="campo-hint">Selecciona el menú donde aparecerá este módulo en la barra de navegación.</p>
+        </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick={() => modalAbierto = false}>Cancelar</button>
-        <button class="btn btn-primary" onclick={guardar}>{modoEditar ? 'Actualizar' : 'Guardar'}</button>
-      </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" type="button" onclick={() => modalAbierto = false}>Cancelar</button>
+          <button class="btn btn-primary" type="submit">{modoEditar ? 'Actualizar' : 'Guardar'}</button>
+        </div>
+      </form>
     </div>
   </div>
 {/if}
