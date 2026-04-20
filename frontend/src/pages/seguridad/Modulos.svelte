@@ -1,0 +1,357 @@
+<script>
+  import { onMount } from 'svelte';
+  import Layout from '../../lib/components/Layout.svelte';
+  import Breadcrumb from '../../lib/components/Breadcrumb.svelte';
+  import Pagination from '../../lib/components/Pagination.svelte';
+  import { token } from '../../lib/stores/auth.js';
+  import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
+  import { cargarMenus } from '../../lib/stores/menus.js';
+  import { navegar } from '../../lib/navegador.js';
+
+  let modulos = $state([]);
+  let total = $state(0);
+  let pagina = $state(1);
+  let buscar = $state('');
+  let cargando = $state(false);
+  let error = $state('');
+  let exito = $state('');
+
+  let modalAbierto = $state(false);
+  let modalDetalle = $state(false);
+  let modalEliminar = $state(false);
+  let modoEditar = $state(false);
+  let moduloSeleccionado = $state(null);
+  let form = $state({ strNombreModulo: '', idMenu: '' });
+  let formError = $state('');
+
+  const POR_PAGINA = 5;
+  let tokenVal = '';
+  token.subscribe(t => tokenVal = t);
+
+  let permisosVal = $state([]);
+  let esAdminVal = $state(false);
+  misPermisos.subscribe(v => permisosVal = v);
+  esAdmin.subscribe(v => esAdminVal = v);
+  let perms = $derived(getPermisos(permisosVal, esAdminVal, 'Modulo'));
+
+  const headers = () => ({
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${tokenVal}`
+  });
+
+  // Obtener menú actual del módulo
+  async function getMenuActual(idModulo) {
+    try {
+      const res = await fetch('http://localhost:3001/api/menus', { headers: headers() });
+      const data = await res.json();
+      const item = data.find(m => m.idModulo == idModulo);
+      return item ? String(item.idMenu) : '';
+    } catch { return ''; }
+  }
+
+  async function cargar() {
+    cargando = true; error = '';
+    try {
+      const res = await fetch(
+        `http://localhost:3001/api/modulos?pagina=${pagina}&limite=${POR_PAGINA}&buscar=${buscar}`,
+        { headers: headers() }
+      );
+      if (res.status === 401 || res.status === 403) { navegar('/login'); return; }
+      const data = await res.json();
+      modulos = data.datos;
+      total = data.total;
+    } catch { error = 'Error al conectar con el servidor.'; }
+    finally { cargando = false; }
+  }
+
+  onMount(cargar);
+
+  let buscarTimeout;
+  function onBuscar(e) {
+    buscar = e.target.value; pagina = 1;
+    clearTimeout(buscarTimeout);
+    buscarTimeout = setTimeout(cargar, 400);
+  }
+
+  function abrirNuevo() {
+    modoEditar = false;
+    form = { strNombreModulo: '', idMenu: '' };
+    formError = ''; modalAbierto = true;
+  }
+
+  async function abrirEditar(modulo) {
+    modoEditar = true; moduloSeleccionado = modulo;
+    const menuActual = await getMenuActual(modulo.id);
+    form = { strNombreModulo: modulo.strNombreModulo, idMenu: menuActual };
+    formError = ''; modalAbierto = true;
+  }
+
+  function abrirDetalle(modulo) { moduloSeleccionado = modulo; modalDetalle = true; }
+  function abrirEliminar(modulo) { moduloSeleccionado = modulo; modalEliminar = true; }
+
+  async function recargarMenus() {
+    const tkn = localStorage.getItem('token');
+    if (tkn) await cargarMenus(tkn);
+  }
+
+  async function guardar() {
+    formError = '';
+    if (!form.strNombreModulo.trim()) { formError = 'El nombre es requerido.'; return; }
+    try {
+      const url = modoEditar
+        ? `http://localhost:3001/api/modulos/${moduloSeleccionado.id}`
+        : 'http://localhost:3001/api/modulos';
+
+      const res = await fetch(url, {
+        method: modoEditar ? 'PUT' : 'POST',
+        headers: headers(),
+        body: JSON.stringify({
+          strNombreModulo: form.strNombreModulo,
+          idMenu: form.idMenu || null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) { formError = data.error; return; }
+
+      exito = modoEditar ? 'Módulo actualizado.' : 'Módulo creado.';
+      modalAbierto = false;
+      await cargar();
+      await recargarMenus();
+      setTimeout(() => exito = '', 3000);
+    } catch { formError = 'Error al guardar.'; }
+  }
+
+  async function eliminar() {
+    try {
+      const res = await fetch(
+        `http://localhost:3001/api/modulos/${moduloSeleccionado.id}`,
+        { method: 'DELETE', headers: headers() }
+      );
+      const data = await res.json();
+      if (!res.ok) { error = data.error; modalEliminar = false; return; }
+      exito = 'Módulo eliminado.';
+      modalEliminar = false;
+      if (modulos.length === 1 && pagina > 1) pagina--;
+      await cargar();
+      await recargarMenus();
+      setTimeout(() => exito = '', 3000);
+    } catch { error = 'Error al eliminar.'; }
+  }
+
+  function formatFecha(f) {
+    return new Date(f).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+</script>
+
+<Layout>
+  <Breadcrumb items={[{ label: 'Seguridad' }, { label: 'Módulos' }]} />
+
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestión de Módulos</h1>
+      <p class="page-subtitle">{total} registro{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}</p>
+    </div>
+    {#if perms.agregar}
+      <button class="btn btn-primary" onclick={abrirNuevo}>+ Nuevo Módulo</button>
+    {/if}
+  </div>
+
+  {#if exito}<div class="alerta alerta-success">✅ {exito}</div>{/if}
+  {#if error}<div class="alerta alerta-error">⚠️ {error}</div>{/if}
+
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input type="text" placeholder="Buscar módulo... (búsqueda automática)" oninput={onBuscar} />
+  </div>
+
+  <div class="tabla-container">
+    {#if cargando}
+      <div class="cargando">Cargando...</div>
+    {:else if modulos.length === 0}
+      <div class="vacio">No se encontraron módulos.</div>
+    {:else}
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nombre del Módulo</th>
+            <th>Fecha Creación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each modulos as modulo, i}
+            <tr>
+              <td>{(pagina - 1) * POR_PAGINA + i + 1}</td>
+              <td><strong>{modulo.strNombreModulo}</strong></td>
+              <td>{formatFecha(modulo.dtCreacion)}</td>
+              <td>
+                <div class="acciones">
+                  {#if perms.detalle}
+                    <button class="btn-accion ver" onclick={() => abrirDetalle(modulo)} title="Ver">👁️</button>
+                  {/if}
+                  {#if perms.editar}
+                    <button class="btn-accion editar" onclick={() => abrirEditar(modulo)} title="Editar">✏️</button>
+                  {/if}
+                  {#if perms.eliminar}
+                    <button class="btn-accion eliminar" onclick={() => abrirEliminar(modulo)} title="Eliminar">🗑️</button>
+                  {/if}
+                  {#if !perms.detalle && !perms.editar && !perms.eliminar}
+                    <span style="color:#BDBDBD; font-size:12px;">Sin acciones</span>
+                  {/if}
+                </div>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+      <Pagination
+        pagina={pagina} total={total} porPagina={POR_PAGINA}
+        onCambio={(p) => { pagina = p; cargar(); }}
+      />
+    {/if}
+  </div>
+</Layout>
+
+<!-- Modal Nuevo/Editar -->
+{#if modalAbierto && (perms.agregar || perms.editar)}
+  <div class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>{modoEditar ? '✏️ Editar Módulo' : '➕ Nuevo Módulo'}</h3>
+        <button class="btn-cerrar" onclick={() => modalAbierto = false} aria-label="Cerrar">✕</button>
+      </div>
+      {#if formError}<div class="alerta alerta-error">⚠️ {formError}</div>{/if}
+
+      <div class="form-group">
+        <label for="nombre">Nombre del Módulo *</label>
+        <input
+          id="nombre" type="text" class="form-control"
+          placeholder="Nombre del módulo"
+          bind:value={form.strNombreModulo} maxlength="100"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="menu">Asignar al Menú</label>
+        <select id="menu" class="form-control" bind:value={form.idMenu}>
+          <option value="">-- Sin menú asignado --</option>
+          <option value="1">🔐 Seguridad</option>
+          <option value="2">📋 Principal 1</option>
+          <option value="3">📊 Principal 2</option>
+        </select>
+        <p class="campo-hint">Selecciona el menú donde aparecerá este módulo en la barra de navegación.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick={() => modalAbierto = false}>Cancelar</button>
+        <button class="btn btn-primary" onclick={guardar}>{modoEditar ? 'Actualizar' : 'Guardar'}</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Modal Detalle -->
+{#if modalDetalle && moduloSeleccionado && perms.detalle}
+  <div class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>👁️ Detalle del Módulo</h3>
+        <button class="btn-cerrar" onclick={() => modalDetalle = false} aria-label="Cerrar">✕</button>
+      </div>
+      <div class="detalle-grid">
+        <div class="detalle-item">
+          <span class="detalle-label">ID</span>
+          <span class="detalle-valor">#{moduloSeleccionado.id}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Nombre</span>
+          <span class="detalle-valor">{moduloSeleccionado.strNombreModulo}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Creado</span>
+          <span class="detalle-valor">{formatFecha(moduloSeleccionado.dtCreacion)}</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick={() => modalDetalle = false}>Cerrar</button>
+        {#if perms.editar}
+          <button class="btn btn-primary" onclick={() => { modalDetalle = false; abrirEditar(moduloSeleccionado); }}>Editar</button>
+        {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Modal Eliminar -->
+{#if modalEliminar && moduloSeleccionado && perms.eliminar}
+  <div class="modal-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3>🗑️ Eliminar Módulo</h3>
+        <button class="btn-cerrar" onclick={() => modalEliminar = false} aria-label="Cerrar">✕</button>
+      </div>
+      <p class="eliminar-msg">
+        ¿Estás seguro de eliminar <strong>"{moduloSeleccionado.strNombreModulo}"</strong>?
+        Esta acción no se puede deshacer.
+      </p>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick={() => modalEliminar = false}>Cancelar</button>
+        <button class="btn btn-danger" onclick={eliminar}>Eliminar</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<style>
+  .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .page-title { font-size: 20px; font-weight: 700; color: #4A0E1A; }
+  .page-subtitle { font-size: 13px; color: #757575; margin-top: 2px; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; transition: all 0.2s; }
+  .btn-primary { background: #6B1A2A; color: white; }
+  .btn-primary:hover { background: #4A0E1A; }
+  .btn-secondary { background: #E0E0E0; color: #3A3A3A; }
+  .btn-secondary:hover { background: #BDBDBD; }
+  .btn-danger { background: #C62828; color: white; }
+  .btn-danger:hover { background: #B71C1C; }
+  .alerta { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 16px; }
+  .alerta-error { background: #FFEBEE; color: #C62828; border-left: 4px solid #C62828; }
+  .alerta-success { background: #E8F5E9; color: #2E7D32; border-left: 4px solid #2E7D32; }
+  .search-box { position: relative; margin-bottom: 16px; }
+  .search-box input { width: 100%; padding: 9px 12px 9px 36px; border: 1px solid #E0E0E0; border-radius: 8px; font-size: 13px; font-family: inherit; background: white; }
+  .search-box input:focus { outline: none; border-color: #6B1A2A; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 14px; }
+  .tabla-container { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+  .tabla { width: 100%; border-collapse: collapse; }
+  .tabla th { background: #6B1A2A; color: white; padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 600; }
+  .tabla td { padding: 11px 16px; border-bottom: 1px solid #F5F5F5; font-size: 13px; }
+  .tabla tr:last-child td { border-bottom: none; }
+  .tabla tr:hover td { background: #FBF5F6; }
+  .acciones { display: flex; gap: 6px; align-items: center; }
+  .btn-accion { width: 30px; height: 30px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+  .btn-accion.ver { background: #E3F2FD; }
+  .btn-accion.ver:hover { background: #1565C0; }
+  .btn-accion.editar { background: #FFF8E1; }
+  .btn-accion.editar:hover { background: #F9A825; }
+  .btn-accion.eliminar { background: #FFEBEE; }
+  .btn-accion.eliminar:hover { background: #C62828; }
+  .cargando, .vacio { text-align: center; padding: 40px; color: #757575; font-size: 14px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 200; }
+  .modal { background: white; border-radius: 12px; padding: 28px; width: 90%; max-width: 480px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+  .modal-sm { max-width: 380px; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #F0EEF0; }
+  .modal-header h3 { font-size: 16px; color: #4A0E1A; font-weight: 700; }
+  .btn-cerrar { background: none; border: none; font-size: 18px; cursor: pointer; color: #757575; padding: 2px 6px; border-radius: 4px; }
+  .btn-cerrar:hover { background: #F5F5F5; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #F0EEF0; }
+  .form-group { margin-bottom: 16px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: #4A4A4A; margin-bottom: 6px; }
+  .form-control { width: 100%; padding: 9px 12px; border: 1.5px solid #E0E0E0; border-radius: 8px; font-size: 13px; font-family: inherit; }
+  .form-control:focus { outline: none; border-color: #6B1A2A; }
+  .campo-hint { font-size: 11px; color: #9E9E9E; margin-top: 4px; }
+  .detalle-grid { display: flex; flex-direction: column; gap: 12px; }
+  .detalle-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #FAFAFA; border-radius: 8px; }
+  .detalle-label { font-size: 12px; color: #757575; font-weight: 600; text-transform: uppercase; }
+  .detalle-valor { font-size: 13px; color: #3A3A3A; font-weight: 500; }
+  .eliminar-msg { font-size: 14px; color: #4A4A4A; line-height: 1.6; margin-bottom: 8px; }
+</style>
