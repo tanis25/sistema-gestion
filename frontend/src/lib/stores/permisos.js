@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { API_URL } from '../config.js';
 
 export const misPermisos = writable([]);
 export const esAdmin = writable(false);
@@ -6,7 +7,7 @@ export const permisosListos = writable(false);
 
 export async function cargarPermisos(tokenVal) {
   try {
-    const res = await fetch('http://localhost:3001/api/auth/mis-permisos', {
+    const res = await fetch(`${API_URL}/api/auth/mis-permisos`, {
       headers: { 'Authorization': `Bearer ${tokenVal}` }
     });
     if (!res.ok) { permisosListos.set(true); return; }

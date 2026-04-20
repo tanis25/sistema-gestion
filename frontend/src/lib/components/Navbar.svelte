@@ -3,6 +3,7 @@
   import { usuario, logout } from '../../lib/stores/auth.js';
   import { misPermisos, esAdmin, tieneAccesoModulo } from '../../lib/stores/permisos.js';
   import { menusDinamicos, moduloARuta } from '../../lib/stores/menus.js';
+  import { API_URL } from '../config.js';
 
   let menuAbierto = $state('');
   let perfilAbierto = $state(false);
@@ -153,7 +154,7 @@
     >
       <div class="avatar">
         {#if $usuario?.imagen}
-          <img src="http://localhost:3001/uploads/{$usuario.imagen}" alt="avatar" />
+          <img src={`${API_URL}/uploads/${$usuario.imagen}`} alt="avatar" />
         {:else}
           {getIniciales($usuario?.nombre)}
         {/if}

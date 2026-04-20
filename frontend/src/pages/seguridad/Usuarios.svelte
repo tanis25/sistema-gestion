@@ -6,6 +6,7 @@
   import { token } from '../../lib/stores/auth.js';
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
   import { navegar } from '../../lib/navegador.js';
+  import { API_URL } from '../../lib/config.js';
 
   let usuarios = $state([]);
   let perfiles = $state([]);
@@ -55,8 +56,8 @@
     cargando = true; error = '';
     try {
       const [resU, resP] = await Promise.all([
-        fetch(`http://localhost:3001/api/usuarios?pagina=${pagina}&limite=${POR_PAGINA}&buscar=${buscar}`, { headers: headersJSON() }),
-        fetch('http://localhost:3001/api/perfiles?pagina=1&limite=100', { headers: headersJSON() })
+        fetch(`${API_URL}/api/usuarios?pagina=${pagina}&limite=${POR_PAGINA}&buscar=${buscar}`, { headers: headersJSON() }),
+        fetch(`${API_URL}/api/perfiles?pagina=1&limite=100`, { headers: headersJSON() })
       ]);
       if (resU.status === 401 || resU.status === 403) { navegar('/login'); return; }
       const dataU = await resU.json();
@@ -88,7 +89,7 @@
   function abrirEditar(u) {
     modoEditar = true; usuarioSeleccionado = u;
     form = { strNombreUsuario: u.strNombreUsuario, strCorreo: u.strCorreo, strPwd: '', strPwdConfirm: '', idPerfil: u.idPerfil, idEstadoUsuario: u.idEstadoUsuario, strNumeroCelular: u.strNumeroCelular || '' };
-    imagenPreview = u.strImagenPerfil ? `http://localhost:3001/uploads/${u.strImagenPerfil}` : '';
+    imagenPreview = u.strImagenPerfil ? `${API_URL}/uploads/${u.strImagenPerfil}` : '';
     imagenArchivo = null; formError = ''; modalAbierto = true;
   }
 
@@ -131,8 +132,8 @@
       if (imagenArchivo) fd.append('imagen', imagenArchivo);
 
       const url = modoEditar
-        ? `http://localhost:3001/api/usuarios/${usuarioSeleccionado.id}`
-        : 'http://localhost:3001/api/usuarios';
+        ? `${API_URL}/api/usuarios/${usuarioSeleccionado.id}`
+        : `${API_URL}/api/usuarios`;
 
       const res = await fetch(url, { method: modoEditar ? 'PUT' : 'POST', headers: headersAuth(), body: fd });
       const data = await res.json();
@@ -145,7 +146,7 @@
 
   async function eliminar() {
     try {
-      const res = await fetch(`http://localhost:3001/api/usuarios/${usuarioSeleccionado.id}`, { method: 'DELETE', headers: headersJSON() });
+      const res = await fetch(`${API_URL}/api/usuarios/${usuarioSeleccionado.id}`, { method: 'DELETE', headers: headersJSON() });
       const data = await res.json();
       if (!res.ok) { error = data.error; modalEliminar = false; return; }
       exito = 'Usuario eliminado.';
@@ -212,7 +213,7 @@
               <td>
                 <div class="avatar-tabla">
                   {#if u.strImagenPerfil}
-                    <img src="http://localhost:3001/uploads/{u.strImagenPerfil}" alt={u.strNombreUsuario} />
+                    <img src={`${API_URL}/uploads/${u.strImagenPerfil}`} alt={u.strNombreUsuario} />
                   {:else}
                     {getIniciales(u.strNombreUsuario)}
                   {/if}
@@ -351,7 +352,7 @@
       <div class="detalle-avatar">
         <div class="avatar-grande">
           {#if usuarioSeleccionado.strImagenPerfil}
-            <img src="http://localhost:3001/uploads/{usuarioSeleccionado.strImagenPerfil}" alt="avatar" />
+            <img src={`${API_URL}/uploads/${usuarioSeleccionado.strImagenPerfil}`} alt="avatar" />
           {:else}
             {getIniciales(usuarioSeleccionado.strNombreUsuario)}
           {/if}

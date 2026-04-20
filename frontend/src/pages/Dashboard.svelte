@@ -3,6 +3,7 @@
   import Layout from '../lib/components/Layout.svelte';
   import { usuario, token } from '../lib/stores/auth.js';
   import { navegar } from '../lib/navegador.js';
+  import { API_URL } from '../lib/config.js';
 
   let stats = $state({
     usuarios: '—', perfiles: '—', modulos: '—', permisos: '—'
@@ -20,7 +21,7 @@
 
   onMount(async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/stats', {
+      const res = await fetch(`${API_URL}/api/stats`, {
         headers: { 'Authorization': `Bearer ${tokenVal}` }
       });
       if (res.ok) {

@@ -6,6 +6,7 @@
   import { token } from '../../lib/stores/auth.js';
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
   import { navegar } from '../../lib/navegador.js';
+  import { API_URL } from '../../lib/config.js';
 
   let perfiles = $state([]);
   let total = $state(0);
@@ -42,7 +43,7 @@
     cargando = true; error = '';
     try {
       const res = await fetch(
-        `http://localhost:3001/api/perfiles?pagina=${pagina}&limite=${POR_PAGINA}&buscar=${buscar}`,
+        `${API_URL}/api/perfiles?pagina=${pagina}&limite=${POR_PAGINA}&buscar=${buscar}`,
         { headers: headers() }
       );
       if (res.status === 401 || res.status === 403) { navegar('/login'); return; }
@@ -82,8 +83,8 @@
     if (!form.strNombrePerfil.trim()) { formError = 'El nombre es requerido.'; return; }
     try {
       const url = modoEditar
-        ? `http://localhost:3001/api/perfiles/${perfilSeleccionado.id}`
-        : 'http://localhost:3001/api/perfiles';
+        ? `${API_URL}/api/perfiles/${perfilSeleccionado.id}`
+        : `${API_URL}/api/perfiles`;
       const res = await fetch(url, {
         method: modoEditar ? 'PUT' : 'POST',
         headers: headers(), body: JSON.stringify(form)
@@ -99,7 +100,7 @@
   async function eliminar() {
     try {
       const res = await fetch(
-        `http://localhost:3001/api/perfiles/${perfilSeleccionado.id}`,
+        `${API_URL}/api/perfiles/${perfilSeleccionado.id}`,
         { method: 'DELETE', headers: headers() }
       );
       const data = await res.json();
