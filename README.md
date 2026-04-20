@@ -35,29 +35,31 @@ Este proyecto es un sistema de gestión con:
 ## Estructura del proyecto
 
 ```
-/proyecto
+/sistema-gestion
   /backend
     package.json
     server.js
     src/
       config/db.js
       middlewares/auth.js
-      routes/*.js
+      routes/
       uploads/
     seed-admin.js
     .env
   /frontend
     package.json
     vite.config.js
+    svelte.config.js
     src/
+      app.css
       App.svelte
       main.js
-      pages/
       lib/
         components/
         stores/
+      pages/
+    public/
     dist/  # generado por build
-  package.json
   README.md
 ```
 
@@ -67,20 +69,20 @@ Este proyecto es un sistema de gestión con:
 
 ### Backend
 
-- `express` - servidor HTTP y rutas.
-- `cors` - manejo de CORS.
-- `dotenv` - carga variables de entorno.
-- `jsonwebtoken` - tokens JWT.
-- `bcrypt` - hashing de contraseñas.
-- `pg` - conexión PostgreSQL.
-- `multer` - subida de archivos.
-- `nodemon` (dev) - recarga automática en desarrollo.
+- `express`
+- `cors`
+- `dotenv`
+- `jsonwebtoken`
+- `bcrypt`
+- `pg`
+- `multer`
+- `nodemon` (dev)
 
 ### Frontend
 
-- `svelte` - framework de UI.
-- `vite` - bundler y servidor de desarrollo.
-- `@sveltejs/vite-plugin-svelte` - integración Svelte/Vite.
+- `svelte`
+- `vite`
+- `@sveltejs/vite-plugin-svelte`
 
 ---
 
@@ -95,50 +97,50 @@ Usa PostgreSQL. El esquema completo del proyecto es el siguiente:
 
 -- Tabla: perfil
 CREATE TABLE perfil (
-    id SERIAL PRIMARY KEY,
-    "strNombrePerfil" VARCHAR(100) NOT NULL UNIQUE,
-    "bitAdministrador" BOOLEAN DEFAULT FALSE,
-    "dtCreacion" TIMESTAMP DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  "strNombrePerfil" VARCHAR(100) NOT NULL UNIQUE,
+  "bitAdministrador" BOOLEAN DEFAULT FALSE,
+  "dtCreacion" TIMESTAMP DEFAULT NOW()
 );
 
 -- Tabla: modulo
 CREATE TABLE modulo (
-    id SERIAL PRIMARY KEY,
-    "strNombreModulo" VARCHAR(100) NOT NULL UNIQUE,
-    "dtCreacion" TIMESTAMP DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  "strNombreModulo" VARCHAR(100) NOT NULL UNIQUE,
+  "dtCreacion" TIMESTAMP DEFAULT NOW()
 );
 
 -- Tabla: usuario
 CREATE TABLE usuario (
-    id SERIAL PRIMARY KEY,
-    "strNombreUsuario" VARCHAR(150) NOT NULL,
-    "idPerfil" INTEGER REFERENCES perfil(id),
-    "strPwd" VARCHAR(255) NOT NULL,
-    "idEstadoUsuario" BOOLEAN DEFAULT TRUE,
-    "strCorreo" VARCHAR(150) NOT NULL UNIQUE,
-    "strNumeroCelular" VARCHAR(15),
-    "strImagenPerfil" TEXT,
-    "dtCreacion" TIMESTAMP DEFAULT NOW()
+  id SERIAL PRIMARY KEY,
+  "strNombreUsuario" VARCHAR(150) NOT NULL,
+  "idPerfil" INTEGER REFERENCES perfil(id),
+  "strPwd" VARCHAR(255) NOT NULL,
+  "idEstadoUsuario" BOOLEAN DEFAULT TRUE,
+  "strCorreo" VARCHAR(150) NOT NULL UNIQUE,
+  "strNumeroCelular" VARCHAR(15),
+  "strImagenPerfil" TEXT,
+  "dtCreacion" TIMESTAMP DEFAULT NOW()
 );
 
 -- Tabla: permisos_perfil
 CREATE TABLE permisos_perfil (
-    id SERIAL PRIMARY KEY,
-    "idModulo" INTEGER REFERENCES modulo(id) ON DELETE CASCADE,
-    "idPerfil" INTEGER REFERENCES perfil(id) ON DELETE CASCADE,
-    "bitAgregar" BOOLEAN DEFAULT FALSE,
-    "bitEditar" BOOLEAN DEFAULT FALSE,
-    "bitConsulta" BOOLEAN DEFAULT FALSE,
-    "bitEliminar" BOOLEAN DEFAULT FALSE,
-    "bitDetalle" BOOLEAN DEFAULT FALSE,
-    UNIQUE("idModulo", "idPerfil")
+  id SERIAL PRIMARY KEY,
+  "idModulo" INTEGER REFERENCES modulo(id) ON DELETE CASCADE,
+  "idPerfil" INTEGER REFERENCES perfil(id) ON DELETE CASCADE,
+  "bitAgregar" BOOLEAN DEFAULT FALSE,
+  "bitEditar" BOOLEAN DEFAULT FALSE,
+  "bitConsulta" BOOLEAN DEFAULT FALSE,
+  "bitEliminar" BOOLEAN DEFAULT FALSE,
+  "bitDetalle" BOOLEAN DEFAULT FALSE,
+  UNIQUE("idModulo", "idPerfil")
 );
 
 -- Tabla: menu (sin pantalla, enlaza módulos con menú)
 CREATE TABLE menu (
-    id SERIAL PRIMARY KEY,
-    "idMenu" INTEGER NOT NULL,
-    "idModulo" INTEGER REFERENCES modulo(id) ON DELETE CASCADE
+  id SERIAL PRIMARY KEY,
+  "idMenu" INTEGER NOT NULL,
+  "idModulo" INTEGER REFERENCES modulo(id) ON DELETE CASCADE
 );
 
 -- ============================================
@@ -166,19 +168,19 @@ INSERT INTO modulo ("strNombreModulo") VALUES
 -- Contraseña: Admin123! (hasheada con bcrypt rounds=10, se reemplaza al levantar el backend)
 -- Por ahora insertamos el hash real desde Node, este es un placeholder
 INSERT INTO usuario (
-    "strNombreUsuario", 
-    "idPerfil", 
-    "strPwd", 
-    "idEstadoUsuario", 
-    "strCorreo", 
-    "strNumeroCelular"
+  "strNombreUsuario",
+  "idPerfil",
+  "strPwd",
+  "idEstadoUsuario",
+  "strCorreo",
+  "strNumeroCelular"
 ) VALUES (
-    'Administrador',
-    1,
-    '$2b$10$placeholder_se_actualizara_con_script',
-    TRUE,
-    'admin@sistema.com',
-    '5530567163'
+  'Administrador',
+  1,
+  '$2b$10$placeholder_se_actualizara_con_script',
+  TRUE,
+  'admin@sistema.com',
+  '5530567163'
 );
 
 -- Permisos totales para Administrador (perfil id=1)
@@ -192,43 +194,52 @@ INSERT INTO menu ("idMenu", "idModulo") VALUES
 (3, 7),(3, 8);
 ```
 
-> Nota: el usuario administrador inicial debe actualizarse con `seed-admin.js` para inyectar el hash real.
+> Nota: el usuario administrador inicial debe actualizarse con `seed-admin.js` para generar el hash real de bcrypt.
 
 ---
 
 ## Backend
 
+### Descripción
+
+El backend se encuentra en `backend/server.js` y expone la API REST. Además, sirve el frontend compilado desde `frontend/dist`.
+
+### Configuración de base de datos
+
+- `backend/src/config/db.js` usa `process.env.DATABASE_URL`.
+- Soporta SSL cuando se usa un servicio de base de datos en nube.
+
 ### Rutas principales
 
-El backend expone rutas bajo `/api` y atiende el frontend compilado:
-
-- `/api/auth` - autenticación y permisos propios
-- `/api/perfiles` - CRUD de perfiles
-- `/api/modulos` - CRUD de módulos
-- `/api/permisos` - permisos por perfil
-- `/api/usuarios` - CRUD de usuarios
-- `/api/menus` - menús dinámicos
-- `/api/stats` - estadísticas para el dashboard
-
-### Archivos clave
-
-- `backend/server.js` - configuración de Express, rutas, serve-static del frontend.
-- `backend/src/config/db.js` - configuración de PostgreSQL.
-- `backend/seed-admin.js` - script para actualizar contraseña de admin.
+- `POST /api/auth/login` - iniciar sesión
+- `GET /api/auth/me` - datos del usuario autenticado
+- `GET /api/perfiles` - obtener perfiles
+- `POST /api/perfiles` - crear perfil
+- `PUT /api/perfiles/:id` - actualizar perfil
+- `DELETE /api/perfiles/:id` - eliminar perfil
+- `GET /api/modulos` - obtener módulos
+- `POST /api/modulos` - crear módulo
+- `PUT /api/modulos/:id` - actualizar módulo
+- `DELETE /api/modulos/:id` - eliminar módulo
+- `GET /api/usuarios` - obtener usuarios
+- `POST /api/usuarios` - crear usuario
+- `PUT /api/usuarios/:id` - actualizar usuario
+- `DELETE /api/usuarios/:id` - eliminar usuario
+- `GET /api/permisos` - obtener permisos por perfil
+- `POST /api/permisos/:perfilId` - actualizar permisos
+- `GET /api/menus` - obtener menú dinámico
+- `GET /api/stats` - estadísticas del dashboard
 
 ### Dependencias del backend
 
-```json
-{
-  "bcrypt": "^5.1.1",
-  "cors": "^2.8.5",
-  "dotenv": "^16.4.5",
-  "express": "^4.18.2",
-  "jsonwebtoken": "^9.0.2",
-  "multer": "^1.4.5-lts.1",
-  "pg": "^8.11.3"
-}
-```
+- `express`
+- `cors`
+- `dotenv`
+- `jsonwebtoken`
+- `bcrypt`
+- `pg`
+- `multer`
+- `nodemon` (dev)
 
 ### Scripts del backend
 
@@ -243,23 +254,23 @@ El backend expone rutas bajo `/api` y atiende el frontend compilado:
 
 ## Frontend
 
-### Comportamiento
+### Descripción
 
-- SPA con Svelte.
-- Consume la API usando rutas relativas como `/api/usuarios`.
-- No utiliza variables de entorno para la URL del backend.
-- El backend sirve los archivos estáticos desde `frontend/dist`.
-- Tiene validaciones en formularios y notificaciones tipo toast.
+El frontend es una aplicación Svelte que consume la API mediante rutas relativas (`/api/...`). No usa `VITE_API_URL`.
+
+### Comportamiento clave
+
+- Carga dinámica de menús desde `frontend/src/lib/stores/menus.js`
+- Actualiza el navbar cuando se crean o eliminan módulos
+- Validaciones de formularios: texto con longitud mínima, correo válido y teléfono de 10 dígitos numéricos
+- Notificaciones tipo toaster para confirmar acciones exitosas y mostrar errores
+- SPA con rutas internas manejadas por `App.svelte`
 
 ### Dependencias del frontend
 
-```json
-{
-  "@sveltejs/vite-plugin-svelte": "^7.0.0",
-  "svelte": "^5.55.1",
-  "vite": "^8.0.4"
-}
-```
+- `svelte`
+- `vite`
+- `@sveltejs/vite-plugin-svelte`
 
 ### Scripts del frontend
 
@@ -277,102 +288,103 @@ El backend expone rutas bajo `/api` y atiende el frontend compilado:
 
 ### Backend
 
-El backend usa estas variables en `backend/.env` o en el entorno de Render:
+Crea un archivo `backend/.env` con estas variables:
 
-- `DATABASE_URL` - conexión completa a PostgreSQL.
-- `PORT` - puerto asignado por Render (opcional, `3001` por defecto localmente).
+```env
+PORT=3001
+DATABASE_URL=postgres://usuario:password@host:puerto/base_de_datos
+JWT_SECRET=tu_secreto_jwt_aqui
+```
+
+- `PORT`: puerto de escucha (Render usa `process.env.PORT`).
+- `DATABASE_URL`: cadena de conexión de PostgreSQL.
+- `JWT_SECRET`: clave para firmar JWT.
 
 ### Frontend
 
-- No requiere `VITE_API_URL` en la configuración actual.
+No se requiere variable de entorno de API en frontend. El backend y frontend se despliegan juntos y el frontend usa rutas relativas.
 
 ---
 
 ## Desarrollo local
 
-1. Instala dependencias:
+### Backend
 
 ```bash
-cd backend && npm install
-cd ../frontend && npm install
+cd backend
+npm install
+npm run dev
 ```
 
-2. Crea `backend/.env` con:
-
-```env
-DATABASE_URL=postgres://usuario:password@localhost:5432/nombredb
-PORT=3001
-```
-
-3. Ejecuta el backend y frontend:
+### Frontend
 
 ```bash
-cd backend && npm run dev
-cd ../frontend && npm run dev
+cd frontend
+npm install
+npm run dev
 ```
 
-4. Genera la base de datos y ejecuta el SQL del esquema.
-5. Actualiza la contraseña del admin:
+### Build de producción
 
 ```bash
-cd backend && node seed-admin.js
+cd frontend
+npm run build
 ```
+
+### Ejecutar el backend con frontend compilado
+
+```bash
+cd backend
+npm start
+```
+
+Asegúrate de tener `frontend/dist` antes de iniciar el backend en modo producción.
 
 ---
 
 ## Despliegue en Render
 
-### Enfoque
+### Pasos generales
 
-El proyecto se despliega como un solo Web Service. El backend sirve el frontend compilado desde `frontend/dist`.
-
-### Build Command
+1. Subir el repositorio completo a Render.
+2. Configurar un solo Web Service.
+3. Ajustar el build command:
 
 ```bash
-npm run build
+cd frontend && npm install && npm run build
+cd ../backend && npm install
 ```
 
-### Start Command
+4. Ajustar el start command:
 
 ```bash
-npm start
+cd backend && npm start
 ```
 
 ### Variables de entorno en Render
 
-- `DATABASE_URL` - cadena de conexión a PostgreSQL.
-- `PORT` - no es necesario definirlo manualmente; Render lo asigna.
+- `PORT` - Render lo asigna automáticamente.
+- `DATABASE_URL` - URL de PostgreSQL.
+- `JWT_SECRET` - secreto para JWT.
 
-### Qué hace el build
+### Notas de despliegue
 
-El script de build raíz instala dependencias del frontend, construye `frontend/dist`, e instala dependencias del backend. El archivo `package.json` en la raíz define:
-
-```json
-{
-  "scripts": {
-    "build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
-    "start": "cd backend && npm start"
-  }
-}
-```
+- El backend sirve el contenido de `frontend/dist`.
+- El catch-all `app.get('*')` devuelve `index.html` para el enrutado SPA.
+- Se usa `process.env.PORT || 3001`.
 
 ---
 
 ## Notas útiles
 
-- El backend atiende rutas estáticas desde `frontend/dist` y tiene un `catch-all` para SPA.
-- El frontend hace fetch a `/api/...` y no depende de URLs hardcodeadas externas.
-- El administrador inicial es `admin@sistema.com` con contraseña `Admin123!`, pero el hash se actualiza con `seed-admin.js`.
-- Si se agrega más lógica, mantén las rutas `api` separadas de las rutas de página.
+- El menú dinámico se construye a partir de la tabla `menu`.
+- Los módulos pueden asignarse a los menús 1, 2, 3 o generar nuevos menús dinámicos.
+- Las validaciones del frontend son tanto HTML como JavaScript.
+- La autenticación trabaja con JWT y el token se envía en el header `Authorization: Bearer ...`.
+- El backend y frontend están integrados en una sola aplicación para despliegue en Render.
 
 ---
 
-## Resumen rápido de despliegue
+## Resumen final
 
-1. Subir el repo a Render.
-2. Configurar Build Command: `npm run build`.
-3. Configurar Start Command: `npm start`.
-4. Añadir `DATABASE_URL`.
-5. Deploy.
-
-¡Listo! Con esto el sistema está documentado desde la base de datos hasta el despliegue final.
+Este repositorio contiene un sistema fullstack completo, listo para desarrollo local y despliegue en Render como un servicio único. La configuración actual soporta autenticación, permisos, menús dinámicos, validaciones de formularios y despliegue con `frontend/dist` servido por Express.
