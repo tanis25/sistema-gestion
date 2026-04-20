@@ -1,11 +1,10 @@
 import { writable } from 'svelte/store';
-import { API_URL } from '../config.js';
 
 export const menusDinamicos = writable([]);
 
 export async function cargarMenus(tokenVal) {
   try {
-    const res = await fetch(`${API_URL}/api/menus`, {
+    const res = await fetch(`/api/menus`, {
       headers: { 'Authorization': `Bearer ${tokenVal}` }
     });
     if (!res.ok) return;

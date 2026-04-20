@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import { navegar } from '../lib/navegador.js';
   import { login } from '../lib/stores/auth.js';
-  import { API_URL } from '../lib/config.js';
 
   let correo = $state('');
   let password = $state('');
@@ -54,7 +53,7 @@
     cargando = true;
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
+      const res = await fetch(`/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ correo, password })

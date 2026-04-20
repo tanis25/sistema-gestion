@@ -7,7 +7,6 @@
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
   import { cargarMenus } from '../../lib/stores/menus.js';
   import { navegar } from '../../lib/navegador.js';
-  import { API_URL } from '../../lib/config.js';
 
   let modulos = $state([]);
   let total = $state(0);
@@ -43,7 +42,7 @@
   // Obtener menú actual del módulo
   async function getMenuActual(idModulo) {
     try {
-      const res = await fetch(`${API_URL}/api/menus`, { headers: headers() });
+      const res = await fetch(`/api/menus`, { headers: headers() });
       const data = await res.json();
       const item = data.find(m => m.idModulo == idModulo);
       return item ? String(item.idMenu) : '';
@@ -54,7 +53,7 @@
     cargando = true; error = '';
     try {
       const res = await fetch(
-        `${API_URL}/api/modulos?pagina=${pagina}&limite=${POR_PAGINA}&buscar=${buscar}`,
+        `/api/modulos?pagina=${pagina}&limite=${POR_PAGINA}&buscar=${buscar}`,
         { headers: headers() }
       );
       if (res.status === 401 || res.status === 403) { navegar('/login'); return; }
@@ -100,8 +99,8 @@
     if (!form.strNombreModulo.trim()) { formError = 'El nombre es requerido.'; return; }
     try {
       const url = modoEditar
-        ? `${API_URL}/api/modulos/${moduloSeleccionado.id}`
-        : `${API_URL}/api/modulos`;
+        ? `/api/modulos/${moduloSeleccionado.id}`
+        : `/api/modulos`;
 
       const res = await fetch(url, {
         method: modoEditar ? 'PUT' : 'POST',
@@ -125,7 +124,7 @@
   async function eliminar() {
     try {
       const res = await fetch(
-        `${API_URL}/api/modulos/${moduloSeleccionado.id}`,
+        `/api/modulos/${moduloSeleccionado.id}`,
         { method: 'DELETE', headers: headers() }
       );
       const data = await res.json();

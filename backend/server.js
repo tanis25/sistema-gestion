@@ -28,6 +28,12 @@ app.use('/api/modulos', moduloRoutes);
 app.use('/api/permisos', permisosRoutes);
 app.use('/api/usuarios', usuarioRoutes);
 
+app.use('/api/auth', authRoutes);
+app.use('/api/perfiles', perfilRoutes);
+app.use('/api/modulos', moduloRoutes);
+app.use('/api/permisos', permisosRoutes);
+app.use('/api/usuarios', usuarioRoutes);
+
 // Estadísticas del dashboard
 app.get('/api/stats', async (req, res) => {
   try {
@@ -65,7 +71,13 @@ app.get('/api/menus', async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => res.json({ mensaje: 'Backend Sistema de Gestión funcionando ✅' }));
+// Servir el frontend compilado
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
+
+// Catch-all para SPA (Svelte)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`));

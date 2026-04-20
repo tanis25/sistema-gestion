@@ -5,7 +5,6 @@
   import { token } from '../../lib/stores/auth.js';
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
   import { navegar } from '../../lib/navegador.js';
-  import { API_URL } from '../../lib/config.js';
 
   let perfiles = $state([]);
   let perfilSeleccionado = $state('');
@@ -33,7 +32,7 @@
 
   async function cargarPerfiles() {
     try {
-      const res = await fetch(`${API_URL}/api/permisos`, { headers: headers() });
+      const res = await fetch(`/api/permisos`, { headers: headers() });
       if (res.status === 401 || res.status === 403) { navegar('/login'); return; }
       perfiles = await res.json();
     } catch { error = 'Error al cargar perfiles.'; }
@@ -44,7 +43,7 @@
     cargando = true; error = ''; cambios = false;
     perfilInfo = perfiles.find(p => p.id == perfilSeleccionado);
     try {
-      const res = await fetch(`${API_URL}/api/permisos/${perfilSeleccionado}`, { headers: headers() });
+      const res = await fetch(`/api/permisos/${perfilSeleccionado}`, { headers: headers() });
       const data = await res.json();
       permisos = data;
     } catch { error = 'Error al cargar permisos.'; }
@@ -88,7 +87,7 @@
     if (!perms.editar) return;
     guardando = true; error = '';
     try {
-      const res = await fetch(`${API_URL}/api/permisos/${perfilSeleccionado}`, {
+      const res = await fetch(`/api/permisos/${perfilSeleccionado}`, {
         method: 'POST', headers: headers(),
         body: JSON.stringify({ permisos })
       });
