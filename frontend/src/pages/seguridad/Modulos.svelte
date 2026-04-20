@@ -5,7 +5,7 @@
   import Pagination from '../../lib/components/Pagination.svelte';
   import { token } from '../../lib/stores/auth.js';
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
-  import { cargarMenus } from '../../lib/stores/menus.js';
+  import { notifySuccess, notifyError } from '../../lib/stores/toast.js';
   import { navegar } from '../../lib/navegador.js';
 
   let modulos = $state([]);
@@ -111,14 +111,15 @@
         })
       });
       const data = await res.json();
-      if (!res.ok) { formError = data.error; return; }
+      if (!res.ok) { formError = data.error; notifyError(data.error || 'Error al guardar.'); return; }
 
       exito = modoEditar ? 'Módulo actualizado.' : 'Módulo creado.';
+      notifySuccess(exito);
       modalAbierto = false;
       await cargar();
       await recargarMenus();
       setTimeout(() => exito = '', 3000);
-    } catch { formError = 'Error al guardar.'; }
+    } catch { formError = 'Error al guardar.'; notifyError('Error al guardar.'); }
   }
 
   async function eliminar() {
@@ -128,14 +129,15 @@
         { method: 'DELETE', headers: headers() }
       );
       const data = await res.json();
-      if (!res.ok) { error = data.error; modalEliminar = false; return; }
+      if (!res.ok) { error = data.error; modalEliminar = false; notifyError(data.error || 'Error al eliminar.'); return; }
       exito = 'Módulo eliminado.';
+      notifySuccess(exito);
       modalEliminar = false;
       if (modulos.length === 1 && pagina > 1) pagina--;
       await cargar();
       await recargarMenus();
       setTimeout(() => exito = '', 3000);
-    } catch { error = 'Error al eliminar.'; }
+    } catch { error = 'Error al eliminar.'; notifyError('Error al eliminar.'); }
   }
 
   function formatFecha(f) {

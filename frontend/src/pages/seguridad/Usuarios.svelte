@@ -5,8 +5,8 @@
   import Pagination from '../../lib/components/Pagination.svelte';
   import { token } from '../../lib/stores/auth.js';
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
+  import { notifySuccess, notifyError } from '../../lib/stores/toast.js';
   import { navegar } from '../../lib/navegador.js';
-
   let usuarios = $state([]);
   let perfiles = $state([]);
   let total = $state(0);
@@ -109,11 +109,11 @@
     if (!form.strNombreUsuario.trim()) return 'El nombre es requerido.';
     if (!form.strCorreo.trim()) return 'El correo es requerido.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.strCorreo)) return 'El correo no es válido.';
+    if (form.strNumeroCelular && !/^\d{10}$/.test(form.strNumeroCelular)) return 'El celular debe tener 10 dígitos y solo números.';
     if (!modoEditar && !form.strPwd) return 'La contraseña es requerida.';
     if (form.strPwd && form.strPwd.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
     if (form.strPwd && form.strPwd !== form.strPwdConfirm) return 'Las contraseñas no coinciden.';
     if (!form.idPerfil) return 'Selecciona un perfil.';
-    if (form.strNumeroCelular && !/^\d{10}$/.test(form.strNumeroCelular)) return 'El celular debe tener 10 dígitos.';
     return '';
   }
 
@@ -136,23 +136,25 @@
 
       const res = await fetch(url, { method: modoEditar ? 'PUT' : 'POST', headers: headersAuth(), body: fd });
       const data = await res.json();
-      if (!res.ok) { formError = data.error; return; }
+      if (!res.ok) { formError = data.error; notifyError(data.error || 'Error al guardar.'); return; }
       exito = modoEditar ? 'Usuario actualizado.' : 'Usuario creado.';
+      notifySuccess(exito);
       modalAbierto = false; cargar();
       setTimeout(() => exito = '', 3000);
-    } catch { formError = 'Error al guardar.'; }
+    } catch { formError = 'Error al guardar.'; notifyError('Error al guardar.'); }
   }
 
   async function eliminar() {
     try {
       const res = await fetch(`/api/usuarios/${usuarioSeleccionado.id}`, { method: 'DELETE', headers: headersJSON() });
       const data = await res.json();
-      if (!res.ok) { error = data.error; modalEliminar = false; return; }
+      if (!res.ok) { error = data.error; modalEliminar = false; notifyError(data.error || 'Error al eliminar.'); return; }
       exito = 'Usuario eliminado.';
+      notifySuccess(exito);
       modalEliminar = false;
       if (usuarios.length === 1 && pagina > 1) pagina--;
       cargar(); setTimeout(() => exito = '', 3000);
-    } catch { error = 'Error al eliminar.'; }
+    } catch { error = 'Error al eliminar.'; notifyError('Error al eliminar.'); }
   }
 
   function formatFecha(f) {
@@ -289,11 +291,11 @@
         </div>
         <div class="form-group">
           <label for="ucorreo">Correo electrónico *</label>
-          <input id="ucorreo" type="email" class="form-control" placeholder="correo@ejemplo.com" bind:value={form.strCorreo} />
+          <input id="ucorreo" type="email" class="form-control" placeholder="correo@ejemplo.com" bind:value={form.strCorreo} required />
         </div>
         <div class="form-group">
           <label for="ucel">Celular</label>
-          <input id="ucel" type="text" class="form-control" placeholder="10 dígitos" bind:value={form.strNumeroCelular} maxlength="10" />
+          <input id="ucel" type="tel" class="form-control" placeholder="10 dígitos" bind:value={form.strNumeroCelular} maxlength="10" inputmode="numeric" pattern="\d{10}" title="Solo dígitos, exactamente 10 caracteres" />
         </div>
         <div class="form-group">
           <label for="uperfil">Perfil *</label>

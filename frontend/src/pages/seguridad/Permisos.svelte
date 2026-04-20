@@ -4,8 +4,8 @@
   import Breadcrumb from '../../lib/components/Breadcrumb.svelte';
   import { token } from '../../lib/stores/auth.js';
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
+  import { notifySuccess, notifyError } from '../../lib/stores/toast.js';
   import { navegar } from '../../lib/navegador.js';
-
   let perfiles = $state([]);
   let perfilSeleccionado = $state('');
   let permisos = $state([]);
@@ -92,11 +92,12 @@
         body: JSON.stringify({ permisos })
       });
       const data = await res.json();
-      if (!res.ok) { error = data.error; return; }
+      if (!res.ok) { error = data.error; notifyError(data.error || 'Error al guardar permisos.'); return; }
       exito = 'Permisos guardados correctamente.';
+      notifySuccess(exito);
       cambios = false;
       setTimeout(() => exito = '', 3000);
-    } catch { error = 'Error al guardar permisos.'; }
+    } catch { error = 'Error al guardar permisos.'; notifyError('Error al guardar permisos.'); }
     finally { guardando = false; }
   }
 </script>

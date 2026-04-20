@@ -112,7 +112,7 @@
       </div>
       <div class="form-group">
         <label for="p11desc">Descripción</label>
-        <textarea id="p11desc" class="form-control" rows="3" placeholder="Descripción opcional" bind:value={form.descripcion}></textarea>
+        <textarea id="p11desc" class="form-control" rows="3" placeholder="Descripción opcional" bind:value={form.descripcion} minlength="50"></textarea>
       </div>
       <div class="form-group">
         <label for="p11estado">Estado</label>
@@ -142,7 +142,7 @@
       </div>
       <div class="form-group">
         <label for="p11edesc">Descripción</label>
-        <textarea id="p11edesc" class="form-control" rows="3" bind:value={form.descripcion}></textarea>
+        <textarea id="p11edesc" class="form-control" rows="3" bind:value={form.descripcion} minlength="50"></textarea>
       </div>
       <div class="form-group">
         <label for="p11eestado">Estado</label>

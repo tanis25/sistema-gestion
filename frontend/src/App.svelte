@@ -13,6 +13,7 @@
   import Principal21 from './pages/principal2/Principal21.svelte';
   import Principal22 from './pages/principal2/Principal22.svelte';
   import ModuloDinamico from './pages/ModuloDinamico.svelte';
+  import Toaster from './lib/components/Toaster.svelte';
 
   let ruta = $state(window.location.pathname);
   let permisosOk = $state(false);
@@ -79,6 +80,8 @@
     <p>Cargando...</p>
   </div>
 {/if}
+
+<Toaster />
 
 <style>
   .cargando-app {

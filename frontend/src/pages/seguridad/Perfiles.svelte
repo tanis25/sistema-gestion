@@ -5,8 +5,8 @@
   import Pagination from '../../lib/components/Pagination.svelte';
   import { token } from '../../lib/stores/auth.js';
   import { misPermisos, esAdmin, getPermisos } from '../../lib/stores/permisos.js';
+  import { notifySuccess, notifyError } from '../../lib/stores/toast.js';
   import { navegar } from '../../lib/navegador.js';
-
   let perfiles = $state([]);
   let total = $state(0);
   let pagina = $state(1);
@@ -89,11 +89,12 @@
         headers: headers(), body: JSON.stringify(form)
       });
       const data = await res.json();
-      if (!res.ok) { formError = data.error; return; }
+      if (!res.ok) { formError = data.error; notifyError(data.error || 'Error al guardar.'); return; }
       exito = modoEditar ? 'Perfil actualizado.' : 'Perfil creado.';
+      notifySuccess(exito);
       modalAbierto = false; cargar();
       setTimeout(() => exito = '', 3000);
-    } catch { formError = 'Error al guardar.'; }
+    } catch { formError = 'Error al guardar.'; notifyError('Error al guardar.'); }
   }
 
   async function eliminar() {
@@ -103,12 +104,13 @@
         { method: 'DELETE', headers: headers() }
       );
       const data = await res.json();
-      if (!res.ok) { error = data.error; modalEliminar = false; return; }
+      if (!res.ok) { error = data.error; modalEliminar = false; notifyError(data.error || 'Error al eliminar.'); return; }
       exito = 'Perfil eliminado.';
+      notifySuccess(exito);
       modalEliminar = false;
       if (perfiles.length === 1 && pagina > 1) pagina--;
       cargar(); setTimeout(() => exito = '', 3000);
-    } catch { error = 'Error al eliminar.'; }
+    } catch { error = 'Error al eliminar.'; notifyError('Error al eliminar.'); }
   }
 
   function formatFecha(f) {
