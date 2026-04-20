@@ -105,6 +105,11 @@
     reader.readAsDataURL(file);
   }
 
+  function soloNumerosCelular(event) {
+    const valor = event.target.value.replace(/\D/g, '').slice(0, 10);
+    form.strNumeroCelular = valor;
+  }
+
   function validar() {
     if (!form.strNombreUsuario.trim()) return 'El nombre es requerido.';
     if (form.strNombreUsuario.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres.';
@@ -301,7 +306,7 @@
         </div>
         <div class="form-group">
           <label for="ucel">Celular</label>
-          <input id="ucel" type="tel" class="form-control" placeholder="10 dígitos" bind:value={form.strNumeroCelular} maxlength="10" minlength="10" inputmode="numeric" pattern="[0-9]{10}" title="Solo números, exactamente 10 dígitos" autocomplete="tel" />
+          <input id="ucel" type="text" class="form-control" placeholder="10 dígitos" bind:value={form.strNumeroCelular} maxlength="10" minlength="10" inputmode="numeric" title="Solo números, exactamente 10 dígitos" autocomplete="tel" oninput={soloNumerosCelular} />
         </div>
         <div class="form-group">
           <label for="uperfil">Perfil *</label>
