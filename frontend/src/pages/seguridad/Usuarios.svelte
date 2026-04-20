@@ -117,7 +117,8 @@
     return '';
   }
 
-  async function guardar() {
+  async function guardar(event) {
+    event?.preventDefault();
     formError = validar();
     if (formError) return;
     try {
@@ -260,11 +261,12 @@
 {#if modalAbierto && (perms.agregar || perms.editar)}
   <div class="modal-overlay">
     <div class="modal modal-lg">
-      <div class="modal-header">
-        <h3>{modoEditar ? '✏️ Editar Usuario' : '➕ Nuevo Usuario'}</h3>
-        <button class="btn-cerrar" onclick={() => modalAbierto = false} aria-label="Cerrar">✕</button>
-      </div>
-      {#if formError}<div class="alerta alerta-error">⚠️ {formError}</div>{/if}
+      <form onsubmit={guardar}>
+        <div class="modal-header">
+          <h3>{modoEditar ? '✏️ Editar Usuario' : '➕ Nuevo Usuario'}</h3>
+          <button class="btn-cerrar" type="button" onclick={() => modalAbierto = false} aria-label="Cerrar">✕</button>
+        </div>
+        {#if formError}<div class="alerta alerta-error">⚠️ {formError}</div>{/if}
 
       <div class="imagen-section">
         <div class="imagen-preview">
@@ -287,11 +289,11 @@
       <div class="form-grid">
         <div class="form-group">
           <label for="unombre">Nombre completo *</label>
-          <input id="unombre" type="text" class="form-control" placeholder="Nombre completo" bind:value={form.strNombreUsuario} />
+          <input id="unombre" type="text" class="form-control" placeholder="Nombre completo" bind:value={form.strNombreUsuario} maxlength="100" required minlength="3" />
         </div>
         <div class="form-group">
           <label for="ucorreo">Correo electrónico *</label>
-          <input id="ucorreo" type="email" class="form-control" placeholder="correo@ejemplo.com" bind:value={form.strCorreo} required />
+          <input id="ucorreo" type="email" class="form-control" placeholder="correo@ejemplo.com" bind:value={form.strCorreo} maxlength="100" required />
         </div>
         <div class="form-group">
           <label for="ucel">Celular</label>
@@ -299,7 +301,7 @@
         </div>
         <div class="form-group">
           <label for="uperfil">Perfil *</label>
-          <select id="uperfil" class="form-control" bind:value={form.idPerfil}>
+          <select id="uperfil" class="form-control" bind:value={form.idPerfil} required>
             <option value="">-- Seleccionar perfil --</option>
             {#each perfiles as p}
               <option value={p.id}>{p.strNombrePerfil}</option>
@@ -309,14 +311,14 @@
         <div class="form-group">
           <label for="upwd">Contraseña {modoEditar ? '(vacío = no cambiar)' : '*'}</label>
           <div class="input-pwd">
-            <input id="upwd" type={mostrarPwd ? 'text' : 'password'} class="form-control" placeholder="••••••••" bind:value={form.strPwd} />
+            <input id="upwd" type={mostrarPwd ? 'text' : 'password'} class="form-control" placeholder="••••••••" bind:value={form.strPwd} minlength="6" required={!modoEditar} />
             <button type="button" class="toggle-pwd" onclick={() => mostrarPwd = !mostrarPwd}>{mostrarPwd ? '🙈' : '👁️'}</button>
           </div>
         </div>
         <div class="form-group">
           <label for="upwd2">Confirmar contraseña</label>
           <div class="input-pwd">
-            <input id="upwd2" type={mostrarPwd2 ? 'text' : 'password'} class="form-control" placeholder="••••••••" bind:value={form.strPwdConfirm} />
+            <input id="upwd2" type={mostrarPwd2 ? 'text' : 'password'} class="form-control" placeholder="••••••••" bind:value={form.strPwdConfirm} minlength="6" required={form.strPwd !== ''} />
             <button type="button" class="toggle-pwd" onclick={() => mostrarPwd2 = !mostrarPwd2}>{mostrarPwd2 ? '🙈' : '👁️'}</button>
           </div>
         </div>
@@ -336,9 +338,10 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick={() => modalAbierto = false}>Cancelar</button>
-        <button class="btn btn-primary" onclick={guardar}>{modoEditar ? 'Actualizar' : 'Guardar Usuario'}</button>
+        <button class="btn btn-secondary" type="button" onclick={() => modalAbierto = false}>Cancelar</button>
+        <button class="btn btn-primary" type="submit">{modoEditar ? 'Actualizar' : 'Guardar Usuario'}</button>
       </div>
+      </form>
     </div>
   </div>
 {/if}

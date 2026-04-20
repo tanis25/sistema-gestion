@@ -85,6 +85,7 @@
 
   async function guardar() {
     if (!perms.editar) return;
+    if (!perfilSeleccionado) { error = 'Selecciona un perfil antes de guardar.'; return; }
     guardando = true; error = '';
     try {
       const res = await fetch(`/api/permisos/${perfilSeleccionado}`, {
@@ -120,7 +121,7 @@
   {:else}
     <div class="card selector-card">
       <label class="selector-label" for="perfil-select">Seleccionar Perfil</label>
-      <select id="perfil-select" class="form-control selector-select" onchange={onPerfilChange} value={perfilSeleccionado}>
+      <select id="perfil-select" class="form-control selector-select" bind:value={perfilSeleccionado} onchange={onPerfilChange} required>
         <option value="">-- Seleccionar perfil --</option>
         {#each perfiles as p}
           <option value={p.id}>{p.strNombrePerfil} {p.bitAdministrador ? '★ (Administrador)' : ''}</option>

@@ -77,9 +77,12 @@
   function abrirDetalle(perfil) { perfilSeleccionado = perfil; modalDetalle = true; }
   function abrirEliminar(perfil) { perfilSeleccionado = perfil; modalEliminar = true; }
 
-  async function guardar() {
+  async function guardar(event) {
+    event?.preventDefault();
     formError = '';
-    if (!form.strNombrePerfil.trim()) { formError = 'El nombre es requerido.'; return; }
+    const nombre = form.strNombrePerfil.trim();
+    if (!nombre) { formError = 'El nombre es requerido.'; return; }
+    if (nombre.length < 3) { formError = 'El nombre debe tener al menos 3 caracteres.'; return; }
     try {
       const url = modoEditar
         ? `/api/perfiles/${perfilSeleccionado.id}`
@@ -197,16 +200,17 @@
 {#if modalAbierto && (perms.agregar || perms.editar)}
   <div class="modal-overlay">
     <div class="modal">
-      <div class="modal-header">
-        <h3>{modoEditar ? '✏️ Editar Perfil' : '➕ Nuevo Perfil'}</h3>
-        <button class="btn-cerrar" onclick={() => modalAbierto = false} aria-label="Cerrar">✕</button>
-      </div>
-      {#if formError}<div class="alerta alerta-error">⚠️ {formError}</div>{/if}
-      <div class="form-group">
-        <label for="nombre">Nombre del Perfil *</label>
-        <input id="nombre" type="text" class="form-control"
-          placeholder="Nombre del perfil" bind:value={form.strNombrePerfil} maxlength="100" />
-      </div>
+      <form onsubmit={guardar}>
+        <div class="modal-header">
+          <h3>{modoEditar ? '✏️ Editar Perfil' : '➕ Nuevo Perfil'}</h3>
+          <button class="btn-cerrar" type="button" onclick={() => modalAbierto = false} aria-label="Cerrar">✕</button>
+        </div>
+        {#if formError}<div class="alerta alerta-error">⚠️ {formError}</div>{/if}
+        <div class="form-group">
+          <label for="nombre">Nombre del Perfil *</label>
+          <input id="nombre" type="text" class="form-control"
+            placeholder="Nombre del perfil" bind:value={form.strNombrePerfil} maxlength="100" required minlength="3" />
+        </div>
       <div class="form-group">
         <label class="toggle-label">
           <div class="toggle-wrap">
@@ -220,9 +224,10 @@
         </label>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick={() => modalAbierto = false}>Cancelar</button>
-        <button class="btn btn-primary" onclick={guardar}>{modoEditar ? 'Actualizar' : 'Guardar'}</button>
+        <button class="btn btn-secondary" type="button" onclick={() => modalAbierto = false}>Cancelar</button>
+        <button class="btn btn-primary" type="submit">{modoEditar ? 'Actualizar' : 'Guardar'}</button>
       </div>
+      </form>
     </div>
   </div>
 {/if}
