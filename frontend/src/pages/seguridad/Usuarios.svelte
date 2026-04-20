@@ -107,9 +107,13 @@
 
   function validar() {
     if (!form.strNombreUsuario.trim()) return 'El nombre es requerido.';
+    if (form.strNombreUsuario.trim().length < 3) return 'El nombre debe tener al menos 3 caracteres.';
     if (!form.strCorreo.trim()) return 'El correo es requerido.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.strCorreo)) return 'El correo no es válido.';
-    if (form.strNumeroCelular && !/^\d{10}$/.test(form.strNumeroCelular)) return 'El celular debe tener 10 dígitos y solo números.';
+    if (form.strNumeroCelular) {
+      const celular = form.strNumeroCelular.trim();
+      if (!/^[0-9]{10}$/.test(celular)) return 'El celular debe tener 10 dígitos y solo números.';
+    }
     if (!modoEditar && !form.strPwd) return 'La contraseña es requerida.';
     if (form.strPwd && form.strPwd.length < 6) return 'La contraseña debe tener al menos 6 caracteres.';
     if (form.strPwd && form.strPwd !== form.strPwdConfirm) return 'Las contraseñas no coinciden.';
@@ -297,7 +301,7 @@
         </div>
         <div class="form-group">
           <label for="ucel">Celular</label>
-          <input id="ucel" type="tel" class="form-control" placeholder="10 dígitos" bind:value={form.strNumeroCelular} maxlength="10" inputmode="numeric" pattern="\d{10}" title="Solo dígitos, exactamente 10 caracteres" />
+          <input id="ucel" type="tel" class="form-control" placeholder="10 dígitos" bind:value={form.strNumeroCelular} maxlength="10" minlength="10" inputmode="numeric" pattern="[0-9]{10}" title="Solo números, exactamente 10 dígitos" autocomplete="tel" />
         </div>
         <div class="form-group">
           <label for="uperfil">Perfil *</label>
